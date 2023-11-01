@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather App</title>
+    <link rel="stylesheet" href="./css/style.css" />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"
+      rel="stylesheet"
+    />
+    <script src="./main.js" defer></script>
+  </head>
+  <header class="header">
+    <div class="header__search-row">
+      <span class="material-icons-round header__search-icon"> search </span>
+      <input
+        class="header__search-input"
+        type="text"
+        placeholder="location name"
+        minlength="1"
+        maxlength="85"
+      />
+      <div class="header__error-popup hide-opacity">Empty input</div>
+    </div>
+  </header>
+  <main class="content">
+    <div class="content__row">
+      <div class="content__primary-data weather">
+        <h2 class="weather__condition">Light Snow</h2>
+        <div class="weather__row">
+          <p class="weather__weekday">Monday</p>
+          <p class="weather__date">1st Nov '23</p>
+        </div>
+        <p class="weather__city">Abakan</p>
+      </div>
+      <div class="content__secondary-data"></div>
+    </div>
+    <div class="content__row"></div>
+  </main>
+  <footer class="footer">
+    <p>Developed by Nixion</p>
+  </footer>
+  <img
+    src="./assets/images/background2.jpg"
+    alt="background image"
+    class="body__background"
+  />
+</html>

@@ -1,0 +1,64 @@
+@use "../globals/variables";
+
+.header {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.4), transparent);
+  color: variables.$text-color;
+
+  display: flex;
+  padding: 20px;
+
+  &__search-row {
+    position: relative;
+    width: min(80%, 260px);
+    display: flex;
+    align-items: center;
+  }
+
+  &__search-input {
+    appearance: none;
+    width: 100%;
+    padding: 6px 40px 6px 24px;
+    font-size: 2rem;
+
+    color: variables.$text-color;
+
+    border: none;
+    border-radius: 24px;
+    background-color: rgba(0, 0, 0, 0.4);
+    transition: opacity 0.25s ease-in-out, background-color 0.25s ease-in-out;
+  }
+
+  &__search-input::placeholder {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  &__search-input:disabled {
+    opacity: 0.5;
+  }
+
+  &__search-input:focus {
+    outline: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  &__search-icon {
+    position: absolute;
+    right: 10px;
+    pointer-events: none;
+  }
+
+  &__error-popup {
+    position: absolute;
+    pointer-events: none;
+    top: 125%;
+    left: 10%;
+    right: 10%;
+    background-color: rgba(0, 0, 0, 0.75);
+    border-radius: 24px;
+    padding: 6px 24px;
+    font-size: 2rem;
+    text-align: center;
+
+    transition: opacity 0.5s ease-in-out;
+  }
+}
