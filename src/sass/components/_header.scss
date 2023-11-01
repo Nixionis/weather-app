@@ -5,6 +5,7 @@
   color: variables.$text-color;
 
   display: flex;
+  justify-content: center;
   padding: 20px;
 
   &__search-row {
