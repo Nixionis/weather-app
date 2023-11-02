@@ -1,197 +1,76 @@
-import { format, parse } from "date-fns";
-import newToDo from "./scripts/models/todo";
-import newProject from "./scripts/models/project";
 import domController from "./scripts/domController";
 
-// const todo = newToDo('TEST', 1, 1, 1, 1, 1);
+const weatherController = (function createController() {
+  const domControl = domController(document);
 
-const taskController = (function () {
-  const projects = [];
-  const domControl = domController(
-    document,
-    addNewProject,
-    changeProjectname,
-    removeProject,
-    getProjectTodo,
-    getCurrentProject,
-    addNewToDo,
-    markToDoForProject,
-    removeToDoFromProject,
-    changeToDoInProject,
-    getAllProjects
-  );
+  function parseWeatherData(weatherData) {
+    const weatherForecast = [];
 
-  let currentProjectId = null;
+    weatherForecast.push({
+      city: weatherData.location.name,
+      localtime: weatherData.location.localtime_epoch,
+      temp: weatherData.current.temp_c,
+      feeltemp: weatherData.current.feelslike_c,
+      conditionText: weatherData.current.condition.text,
+      conditionCode: weatherData.current.condition.code,
+    });
 
-  function storageAvailable(type) {
-    let storage;
-    try {
-      storage = window[type];
-      const x = "__storage_test__";
-      storage.setItem(x, x);
-      storage.removeItem(x);
-      return true;
-    } catch (e) {
-      return (
-        e instanceof DOMException &&
-        // everything except Firefox
-        (e.code === 22 ||
-          // Firefox
-          e.code === 1014 ||
-          // test name field too, because code might not be present
-          // everything except Firefox
-          e.name === "QuotaExceededError" ||
-          // Firefox
-          e.name === "NS_ERROR_DOM_QUOTA_REACHED") &&
-        // acknowledge QuotaExceededError only if there's something already stored
-        storage &&
-        storage.length !== 0
-      );
-    }
+    weatherForecast.push({
+      city: weatherData.location.name,
+      localtime: weatherData.forecast.forecastday[1].date_epoch,
+      maxtemp: weatherData.forecast.forecastday[1].day.maxtemp_c,
+      mintemp: weatherData.forecast.forecastday[1].day.mintemp_c,
+      conditionText: weatherData.forecast.forecastday[1].day.condition.text,
+      conditionCode: weatherData.forecast.forecastday[1].day.condition.code,
+    });
+
+    weatherForecast.push({
+      city: weatherData.location.name,
+      localtime: weatherData.forecast.forecastday[2].date_epoch,
+      maxtemp: weatherData.forecast.forecastday[2].day.maxtemp_c,
+      mintemp: weatherData.forecast.forecastday[2].day.mintemp_c,
+      conditionText: weatherData.forecast.forecastday[2].day.condition.text,
+      conditionCode: weatherData.forecast.forecastday[2].day.condition.code,
+    });
+
+    domControl.fillCards(weatherForecast);
   }
 
-  function loadStorageData() {
-    if (!storageAvailable("localStorage")) {
-      console.log("Local storage currently unavailable");
-    }
+  async function getWeatherData(cityName) {
+    domControl.showLoading();
 
-    let loadProjects = localStorage.getItem("todoAppProjects");
-    if (!loadProjects) return;
-
-    loadProjects = JSON.parse(loadProjects).projects;
-
-    for (let i = 0; i < loadProjects.length; i++) {
-      const loadedProject = newProject(loadProjects[i].title);
-
-      for (let j = 0; j < loadProjects[i].tasks.length; j++) {
-        const loadedTask = newToDo(
-          loadProjects[i].tasks[j].title,
-          loadProjects[i].tasks[j].description,
-          parse(loadProjects[i].tasks[j].dueDate, "MM/dd/yyyy", new Date()),
-          loadProjects[i].tasks[j].priority,
-          loadProjects[i].tasks[j].completed
-        );
-
-        loadedProject.pushToDo(loadedTask);
+    const weatherResponse = await fetch(
+      `https://api.weatherapi.com/v1/forecast.json?key=43ba231c1eed48d5a9f195216232810&q=${cityName}&days=3&aqi=no&alerts=no`,
+      {
+        mode: "cors",
       }
+    );
 
-      projects.push(loadedProject);
-    }
-  }
-
-  function saveStorageData() {
-    if (!storageAvailable("localStorage")) {
-      console.log("Local storage currently unavailable");
-    }
-
-    if (projects.length === 0) {
-      localStorage.setItem("todoAppProjects", "");
+    if (!weatherResponse.ok) {
+      const errorObject = await weatherResponse.json();
+      domControl.ShowSearchError(errorObject.error.message);
+      domControl.hideLoading(true);
       return;
     }
 
-    const saveObject = {
-      projects: [],
-    };
+    const dataObject = await weatherResponse.json();
+    parseWeatherData(dataObject);
+    domControl.hideLoading(false);
+  }
 
-    for (let i = 0; i < projects.length; i++) {
-      saveObject.projects.push({
-        title: projects[i].title,
-        tasks: [],
-      });
-
-      for (let j = 0; j < projects[i].toDos.length; j++) {
-        saveObject.projects[i].tasks.push({
-          title: projects[i].toDos[j].title,
-          description: projects[i].toDos[j].description,
-          dueDate: format(projects[i].toDos[j].dueDate, "MM/dd/yyyy"),
-          priority: projects[i].toDos[j].priority,
-          completed: projects[i].toDos[j].completed,
-        });
+  domControl.searchInput.addEventListener("keyup", (e) => {
+    if (e.key === "Enter" || e.keyCode === 13) {
+      if (!e.target.value) {
+        domControl.ShowSearchError("Search field is empty");
+        return;
       }
+      getWeatherData(e.target.value).catch(() =>
+        domControl.ShowSearchError("Internet connection error")
+      );
     }
+  });
 
-    localStorage.setItem("todoAppProjects", JSON.stringify(saveObject));
-  }
-
-  loadStorageData();
-
-  domControl.drawProjects(projects);
-  domControl.clickAllTasks();
-
-  function addNewProject(projectTitle) {
-    const createdProject = newProject(projectTitle);
-    projects.push(createdProject);
-
-    domControl.drawProjects(projects);
-    saveStorageData();
-  }
-
-  function changeProjectname(newName, index) {
-    projects[index].title = newName;
-    domControl.drawProjects(projects);
-    saveStorageData();
-  }
-
-  function removeProject(index) {
-    if (currentProjectId === index) {
-      currentProjectId = null;
-    }
-
-    projects.splice(index, 1);
-    domControl.drawProjects(projects);
-    saveStorageData();
-  }
-
-  function getProjectTodo(index) {
-    currentProjectId = index;
-    return projects[index].toDos;
-  }
-
-  function getCurrentProject() {
-    return currentProjectId;
-  }
-
-  function addNewToDo(todo) {
-    const createdToDo = newToDo(
-      todo.title,
-      todo.description,
-      todo.dueDate,
-      todo.priority,
-      false
-    );
-    projects[currentProjectId].pushToDo(createdToDo);
-    saveStorageData();
-  }
-
-  function markToDoForProject(projectIndex, toDoIndex) {
-    projects[projectIndex].toggleToDoComplete(toDoIndex);
-    saveStorageData();
-  }
-
-  function removeToDoFromProject(projectIndex, toDoIndex) {
-    projects[projectIndex].removeToDoAt(toDoIndex);
-    saveStorageData();
-  }
-
-  function changeToDoInProject(
-    toDoIndex,
-    projectIndex,
-    title,
-    description,
-    dueDate,
-    priority
-  ) {
-    projects[projectIndex].changeToDoData(
-      toDoIndex,
-      title,
-      description,
-      dueDate,
-      priority
-    );
-    saveStorageData();
-  }
-
-  function getAllProjects() {
-    return [...projects];
-  }
+  getWeatherData("London").catch(() =>
+    domControl.ShowSearchError("Internet connection error")
+  );
 })();

@@ -1,648 +1,307 @@
-import { format, isToday, isFuture, differenceInCalendarDays } from "date-fns";
+import { format, fromUnixTime } from "date-fns";
 
-function domController(doc,
-    addProjectFunction,
-    changeProjectNameFunction,
-    removeProjectFunction,
-    getProjectToDoFunction,
-    getCurrentProjectFunction,
-    addNewToDoFunction,
-    toggleToDoCompleteFunction,
-    removeToDoFromProjectFunction,
-    changeToDoInProjectFunction,
-    getAllProjectsFunction) {
+function domController(doc) {
+  const searchInput = doc.querySelector(".header__search-input");
+  const searchError = doc.querySelector(".header__error-popup");
 
-    const menuBtn = doc.querySelector('.js-menu-btn');
+  // Static cards data
+  const FirstDay = doc.querySelector(".day-card:nth-of-type(1)");
+  const FirstDayCondition = FirstDay.querySelector(".day-card__condition");
+  const FirstDayWeekday = FirstDay.querySelector(".day-card__weekday");
+  const FirstDayDate = FirstDay.querySelector(".day-card__date");
+  const FirstDayTime = FirstDay.querySelector(".day-card__time");
+  const FirstDayCity = FirstDay.querySelector(".day-card__city");
+  const FirstDayTempColor = FirstDay.querySelector(".day-card__temp-color");
+  const FirstDayTemp = FirstDay.querySelector(".day-card__temp");
+  const FirstDayFeelTemp = FirstDay.querySelector(".day-card__feel-temp");
+  const FirstDayIconRow = FirstDay.querySelector(".day-card__icon-row");
 
-    //aside elements
-    const aside = doc.querySelector('.aside');
-    const projectList = doc.querySelector('.project-list');
+  const SecondDay = doc.querySelector(".day-card:nth-of-type(2)");
+  const SecondDayCondition = SecondDay.querySelector(".day-card__condition");
+  const SecondDayWeekday = SecondDay.querySelector(".day-card__weekday");
+  const SecondDayDate = SecondDay.querySelector(".day-card__date");
+  const SecondDayTime = SecondDay.querySelector(".day-card__time");
+  const SecondDayCity = SecondDay.querySelector(".day-card__city");
+  const SecondDayTempColor = SecondDay.querySelector(".day-card__temp-color");
+  const SecondDayTemp = SecondDay.querySelector(".day-card__temp");
+  const SecondDayFeelTemp = SecondDay.querySelector(".day-card__feel-temp");
+  const SecondDayIconRow = SecondDay.querySelector(".day-card__icon-row");
 
-    const addProjectBtn = doc.querySelector('.js-add-project');
+  const ThirdDay = doc.querySelector(".day-card:nth-of-type(3)");
+  const ThirdDayCondition = ThirdDay.querySelector(".day-card__condition");
+  const ThirdDayWeekday = ThirdDay.querySelector(".day-card__weekday");
+  const ThirdDayDate = ThirdDay.querySelector(".day-card__date");
+  const ThirdDayTime = ThirdDay.querySelector(".day-card__time");
+  const ThirdDayCity = ThirdDay.querySelector(".day-card__city");
+  const ThirdDayTempColor = ThirdDay.querySelector(".day-card__temp-color");
+  const ThirdDayTemp = ThirdDay.querySelector(".day-card__temp");
+  const ThirdDayFeelTemp = ThirdDay.querySelector(".day-card__feel-temp");
+  const ThirdDayIconRow = ThirdDay.querySelector(".day-card__icon-row");
 
-    const newProjectRow = doc.querySelector('.js-newProject-form');
-    const projectCreateForm = createProjectForm(false, newProjectRow);
-    newProjectRow.appendChild(projectCreateForm);
+  //
 
-    const editProjectRow = doc.querySelector('.js-editProject-form');
-    const projectEditForm = createProjectForm(true, editProjectRow);
-    editProjectRow.appendChild(projectEditForm);
+  const loading = doc.querySelector(".loading");
+  const content = doc.querySelector(".content");
 
-    const allTasksButton = doc.querySelector('.js-all-tasks');
-    const todayTasksButton = doc.querySelector('.js-today-tasks');
-    const nextWeekTasksButton = doc.querySelector('.js-week-tasks');
-    const completedTasksButton = doc.querySelector('.js-completed-tasks');
+  // Fill card data
 
-    //ToDo elements
-    const cardsContainer = doc.querySelector('.cards');
-    const addToDoBtn = doc.querySelector('.add-task');
-    const toDoAddForm = doc.querySelector('.js-add-todo');
-    const toDoEditForm = doc.querySelector('.js-edit-todo');
+  const tempGradient = {
+    freeze: " --freeze-weather",
+    cold: " --cold-weather",
+    cool: " --cool-weather",
+    warm: " --warm-weather",
+    hot: " --hot-weather",
+    fire: " --fire-weather",
+  };
 
-    let editingProjectId = null;
-    let editingToDo = null;
+  const codeToStatus = {
+    1000: "clear",
+    1003: "cloud",
+    1006: "cloud",
+    1009: "cloud",
+    1030: "cloud",
+    1063: "rain",
+    1066: "snow",
+    1069: "rain",
+    1072: "rain",
+    1087: "rain",
+    1114: "snow",
+    1117: "snow",
+    1135: "cloud",
+    1147: "cloud",
+    1150: "rain",
+    1153: "rain",
+    1168: "rain",
+    1171: "rain",
+    1180: "rain",
+    1183: "rain",
+    1186: "rain",
+    1189: "rain",
+    1192: "rain",
+    1195: "rain",
+    1198: "rain",
+    1201: "rain",
+    1204: "rain",
+    1207: "raint",
+    1210: "snow",
+    1213: "snow",
+    1216: "snow",
+    1219: "snow",
+    1222: "snow",
+    1225: "snow",
+    1237: "snow",
+    1240: "rain",
+    1243: "rain",
+    1246: "rain",
+    1249: "rain",
+    1252: "rain",
+    1255: "snow",
+    1258: "snow",
+    1261: "snow",
+    1264: "snow",
+    1273: "rain",
+    1276: "rain",
+    1279: "snow",
+    1282: "snow",
+  };
 
+  const statusToIcon = {
+    clear: `<svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="1em"
+    viewBox="0 0 512 512"
+    class="day-card__icon"
+  >
+  <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M361.5 1.2c5 2.1 8.6 6.6 9.6 11.9L391 121l107.9 19.8c5.3 1 9.8 4.6 11.9 9.6s1.5 10.7-1.6 15.2L446.9 256l62.3 90.3c3.1 4.5 3.7 10.2 1.6 15.2s-6.6 8.6-11.9 9.6L391 391 371.1 498.9c-1 5.3-4.6 9.8-9.6 11.9s-10.7 1.5-15.2-1.6L256 446.9l-90.3 62.3c-4.5 3.1-10.2 3.7-15.2 1.6s-8.6-6.6-9.6-11.9L121 391 13.1 371.1c-5.3-1-9.8-4.6-11.9-9.6s-1.5-10.7 1.6-15.2L65.1 256 2.8 165.7c-3.1-4.5-3.7-10.2-1.6-15.2s6.6-8.6 11.9-9.6L121 121 140.9 13.1c1-5.3 4.6-9.8 9.6-11.9s10.7-1.5 15.2 1.6L256 65.1 346.3 2.8c4.5-3.1 10.2-3.7 15.2-1.6zM160 256a96 96 0 1 1 192 0 96 96 0 1 1 -192 0zm224 0a128 128 0 1 0 -256 0 128 128 0 1 0 256 0z"/>
+  </svg>`,
+    cloud: `<svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="1em"
+    viewBox="0 0 640 512"
+    class="day-card__icon"
+  >
+    <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+    <path
+      d="M0 336c0 79.5 64.5 144 144 144H512c70.7 0 128-57.3 128-128c0-61.9-44-113.6-102.4-125.4c4.1-10.7 6.4-22.4 6.4-34.6c0-53-43-96-96-96c-19.7 0-38.1 6-53.3 16.2C367 64.2 315.3 32 256 32C167.6 32 96 103.6 96 192c0 2.7 .1 5.4 .2 8.1C40.2 219.8 0 273.2 0 336z"
+    />
+  </svg>`,
 
-    function unselectTaskButtons() {
-        allTasksButton.classList.remove('active');
-        todayTasksButton.classList.remove('active');
-        nextWeekTasksButton.classList.remove('active');
-        completedTasksButton.classList.remove('active');
+    rain: `<svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="1em"
+    viewBox="0 0 512 512"
+    class="day-card__icon"
+  >
+  <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M96 320c-53 0-96-43-96-96c0-42.5 27.6-78.6 65.9-91.2C64.7 126.1 64 119.1 64 112C64 50.1 114.1 0 176 0c43.1 0 80.5 24.3 99.2 60c14.7-17.1 36.5-28 60.8-28c44.2 0 80 35.8 80 80c0 5.5-.6 10.8-1.6 16c.5 0 1.1 0 1.6 0c53 0 96 43 96 96s-43 96-96 96H96zm-6.8 52c1.3-2.5 3.9-4 6.8-4s5.4 1.5 6.8 4l35.1 64.6c4.1 7.5 6.2 15.8 6.2 24.3v3c0 26.5-21.5 48-48 48s-48-21.5-48-48v-3c0-8.5 2.1-16.9 6.2-24.3L89.2 372zm160 0c1.3-2.5 3.9-4 6.8-4s5.4 1.5 6.8 4l35.1 64.6c4.1 7.5 6.2 15.8 6.2 24.3v3c0 26.5-21.5 48-48 48s-48-21.5-48-48v-3c0-8.5 2.1-16.9 6.2-24.3L249.2 372zm124.9 64.6L409.2 372c1.3-2.5 3.9-4 6.8-4s5.4 1.5 6.8 4l35.1 64.6c4.1 7.5 6.2 15.8 6.2 24.3v3c0 26.5-21.5 48-48 48s-48-21.5-48-48v-3c0-8.5 2.1-16.9 6.2-24.3z"/></svg>`,
+    snow: `<svg
+    xmlns="http://www.w3.org/2000/svg"
+    height="1em"
+    viewBox="0 0 448 512"
+    class="day-card__icon"
+  >
+  <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><path d="M224 0c13.3 0 24 10.7 24 24V70.1l23-23c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9l-57 57v76.5l66.2-38.2 20.9-77.8c3.4-12.8 16.6-20.4 29.4-17s20.4 16.6 17 29.4L373 142.2l37.1-21.4c11.5-6.6 26.2-2.7 32.8 8.8s2.7 26.2-8.8 32.8L397 183.8l31.5 8.4c12.8 3.4 20.4 16.6 17 29.4s-16.6 20.4-29.4 17l-77.8-20.9L272 256l66.2 38.2 77.8-20.9c12.8-3.4 26 4.2 29.4 17s-4.2 26-17 29.4L397 328.2l37.1 21.4c11.5 6.6 15.4 21.3 8.8 32.8s-21.3 15.4-32.8 8.8L373 369.8l8.4 31.5c3.4 12.8-4.2 26-17 29.4s-26-4.2-29.4-17l-20.9-77.8L248 297.6v76.5l57 57c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-23-23V488c0 13.3-10.7 24-24 24s-24-10.7-24-24V441.9l-23 23c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l57-57V297.6l-66.2 38.2-20.9 77.8c-3.4 12.8-16.6 20.4-29.4 17s-20.4-16.6-17-29.4L75 369.8 37.9 391.2c-11.5 6.6-26.2 2.7-32.8-8.8s-2.7-26.2 8.8-32.8L51 328.2l-31.5-8.4c-12.8-3.4-20.4-16.6-17-29.4s16.6-20.4 29.4-17l77.8 20.9L176 256l-66.2-38.2L31.9 238.6c-12.8 3.4-26-4.2-29.4-17s4.2-26 17-29.4L51 183.8 13.9 162.4c-11.5-6.6-15.4-21.3-8.8-32.8s21.3-15.4 32.8-8.8L75 142.2l-8.4-31.5c-3.4-12.8 4.2-26 17-29.4s26 4.2 29.4 17l20.9 77.8L200 214.4V137.9L143 81c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0l23 23V24c0-13.3 10.7-24 24-24z"/></svg>`,
+  };
+
+  let errorTimeoutId;
+
+  function ShowSearchError(errorText) {
+    searchError.textContent = errorText;
+    searchError.classList.remove("hide-opacity");
+
+    if (errorTimeoutId) {
+      clearTimeout(errorTimeoutId);
+      errorTimeoutId = null;
     }
 
-    function unselectProject() {
-        const project = doc.querySelector(`.aside__item.highlight`);
-        if (project)
-            project.classList.remove('highlight');
+    errorTimeoutId = setTimeout(() => {
+      searchError.classList.add("hide-opacity");
+    }, 3000);
+  }
+
+  function showLoading() {
+    loading.classList.remove("hide-opacity");
+    content.classList.add("hide-opacity");
+  }
+
+  function hideLoading(onlyLoading = false) {
+    loading.classList.add("hide-opacity");
+    if (onlyLoading) return;
+    content.classList.remove("hide-opacity");
+  }
+
+  /*
+
+  {
+    [
+        city: "Moscow",
+        localtime: "2023-11-03 0:41",
+        temp: 3.0,
+        feeltemp: 0.0,
+        conditionText: "Overcast",
+        conditionCode: 1009,
+    ]
+  }
+
+  */
+
+  function fillCards(weatherData) {
+    FirstDayCondition.textContent = weatherData[0].conditionText;
+    FirstDayWeekday.textContent = format(
+      fromUnixTime(weatherData[0].localtime),
+      "EEEE"
+    );
+    FirstDayDate.textContent = format(
+      fromUnixTime(weatherData[0].localtime),
+      "PPP"
+    );
+    FirstDayTime.textContent = format(
+      fromUnixTime(weatherData[0].localtime),
+      "p"
+    );
+    FirstDayCity.textContent = weatherData[0].city;
+
+    let tempColor = weatherData[0].temp;
+    if (tempColor <= -25) {
+      tempColor = tempGradient.freeze;
+    } else if (tempColor <= -15) {
+      tempColor = tempGradient.cold;
+    } else if (tempColor <= 0) {
+      tempColor = tempGradient.cool;
+    } else if (tempColor <= 10) {
+      tempColor = tempGradient.warm;
+    } else if (tempColor <= 25) {
+      tempColor = tempGradient.hot;
+    } else {
+      tempColor = tempGradient.fire;
     }
+    FirstDayTempColor.style.background = `var(${tempColor})`;
 
-    function toggleAside() {
-        menuBtn.classList.toggle('pressed');
-        aside.classList.toggle('hide-display');
+    FirstDayTemp.innerHTML = `${weatherData[0].temp} &#8451;`;
+    FirstDayFeelTemp.innerHTML = `Feels like: ${weatherData[0].feeltemp} &#8451;`;
+
+    FirstDayIconRow.innerHTML =
+      statusToIcon[codeToStatus[String(weatherData[0].conditionCode)]];
+
+    //
+
+    SecondDayCondition.textContent = weatherData[1].conditionText;
+    SecondDayWeekday.textContent = format(
+      fromUnixTime(weatherData[1].localtime),
+      "EEEE"
+    );
+    SecondDayDate.textContent = format(
+      fromUnixTime(weatherData[1].localtime),
+      "PPP"
+    );
+    SecondDayTime.textContent = format(
+      fromUnixTime(weatherData[1].localtime),
+      "p"
+    );
+    SecondDayCity.textContent = weatherData[1].city;
+
+    tempColor = (weatherData[1].maxtemp + weatherData[1].mintemp) / 2;
+    if (tempColor <= -25) {
+      tempColor = tempGradient.freeze;
+    } else if (tempColor <= -15) {
+      tempColor = tempGradient.cold;
+    } else if (tempColor <= 0) {
+      tempColor = tempGradient.cool;
+    } else if (tempColor <= 10) {
+      tempColor = tempGradient.warm;
+    } else if (tempColor <= 25) {
+      tempColor = tempGradient.hot;
+    } else {
+      tempColor = tempGradient.fire;
     }
+    SecondDayTempColor.style.background = `var(${tempColor})`;
 
-    function showHiddenProject() {
-        if (editingProjectId !== null) {
-            doc.querySelector(`.aside__item[data-project-id='${editingProjectId}']`).classList.remove('hide-height');
-            editingProjectId = null;
-        }
+    SecondDayTemp.innerHTML = `${weatherData[1].maxtemp} &#8451;`;
+    SecondDayFeelTemp.innerHTML = `Min temp: ${weatherData[1].mintemp} &#8451;`;
+
+    SecondDayIconRow.innerHTML =
+      statusToIcon[codeToStatus[String(weatherData[1].conditionCode)]];
+
+    //
+
+    ThirdDayCondition.textContent = weatherData[2].conditionText;
+    ThirdDayWeekday.textContent = format(
+      fromUnixTime(weatherData[2].localtime),
+      "EEEE"
+    );
+    ThirdDayDate.textContent = format(
+      fromUnixTime(weatherData[2].localtime),
+      "PPP"
+    );
+    ThirdDayTime.textContent = format(
+      fromUnixTime(weatherData[2].localtime),
+      "p"
+    );
+    ThirdDayCity.textContent = weatherData[2].city;
+
+    tempColor = (weatherData[2].maxtemp + weatherData[2].mintemp) / 2;
+    if (tempColor <= -25) {
+      tempColor = tempGradient.freeze;
+    } else if (tempColor <= -15) {
+      tempColor = tempGradient.cold;
+    } else if (tempColor <= 0) {
+      tempColor = tempGradient.cool;
+    } else if (tempColor <= 10) {
+      tempColor = tempGradient.warm;
+    } else if (tempColor <= 25) {
+      tempColor = tempGradient.hot;
+    } else {
+      tempColor = tempGradient.fire;
     }
+    ThirdDayTempColor.style.background = `var(${tempColor})`;
 
-    function showHiddenToDo() {
-        if (editingToDo !== null) {
-            doc.querySelector(`.card[data-project-id='${editingToDo.projectIndex}'][data-to-do-id='${editingToDo.todoIndex}']`).classList.remove('hide-display');
-            editingToDo = null;
-        }
-    }
+    ThirdDayTemp.innerHTML = `${weatherData[2].maxtemp} &#8451;`;
+    ThirdDayFeelTemp.innerHTML = `Min temp: ${weatherData[2].mintemp} &#8451;`;
 
-    function createProjectForm(edit, row) {
+    ThirdDayIconRow.innerHTML =
+      statusToIcon[codeToStatus[String(weatherData[2].conditionCode)]];
+  }
 
-        const form = doc.createElement('form');
-        form.classList.add('new-project');
-
-        const inputRow = doc.createElement('div');
-        inputRow.classList.add('new-project__row');
-        const titleInput = doc.createElement('input');
-        titleInput.classList.add('new-project__input');
-        titleInput.type = 'text';
-        titleInput.minlength = '1';
-        titleInput.placeholder = 'Enter Project Name';
-        inputRow.appendChild(titleInput);
-
-        const btnsRow = doc.createElement('div');
-        btnsRow.classList.add('new-project__row');
-        const addBtn = doc.createElement('button');
-        addBtn.classList.add('new-project__add');
-        addBtn.type = 'submit';
-        addBtn.textContent = edit ? 'Edit' : 'Add';
-        btnsRow.appendChild(addBtn);
-        const cancelBtn = doc.createElement('button');
-        cancelBtn.classList.add('new-project__cancel');
-        cancelBtn.type = 'button';
-        cancelBtn.textContent = 'Cancel';
-        btnsRow.appendChild(cancelBtn);
-
-        form.appendChild(inputRow);
-        form.appendChild(btnsRow);
-
-        //Form cancel button
-
-        cancelBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-
-            row.classList.add('hide-height');
-
-            if (edit) {
-                showHiddenProject();
-            }
-
-        }, { capture: false });
-
-        //Form accept button
-
-        addBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (!titleInput.value) {
-                console.log('Project title is too short!');
-                return;
-            }
-
-            if (!edit) {
-                addProjectFunction(titleInput.value);
-            } else {
-                changeProjectNameFunction(titleInput.value, editingProjectId);
-
-            }
-
-
-            titleInput.value = '';
-            row.classList.add('hide-height');
-
-        }, { capture: false })
-
-        return form;
-    }
-
-    function showEditForm(projectId, projectTitle) {
-        const editingProject = doc.querySelector(`.aside__item[data-project-id='${projectId}']`);
-        editProjectRow.classList.add('hide-height');
-        projectEditForm.querySelector('.new-project__input').value = projectTitle;
-        projectList.insertBefore(editProjectRow, editingProject);
-        setTimeout(() => { editProjectRow.classList.remove('hide-height'); }, 0);
-
-
-        editingProjectId = projectId;
-    }
-
-    function cleanProjects() {
-        editingProjectId = null;
-        editProjectRow.classList.add('hide-height');
-
-
-        const projects = doc.querySelectorAll('.aside__item[data-project-id]');
-
-        for (let i = projects.length - 1; i >= 0; i--) {
-            projects[i].remove();
-        }
-    }
-
-    const drawProjects = function (projects) {
-        cleanProjects();
-
-        for (let i = 0; i < projects.length; i++) {
-
-            const listItem = doc.createElement('li');
-            listItem.classList.add('aside__item');
-            listItem.classList.add('project');
-            listItem.dataset.projectId = `${i}`;
-
-            if (i === getCurrentProjectFunction()) {
-                listItem.classList.add('highlight');
-            }
-
-            const projectTitle = doc.createElement('p');
-            projectTitle.textContent = projects[i].title;
-            listItem.appendChild(projectTitle);
-
-            const actionsRow = doc.createElement('div');
-            actionsRow.classList.add('aside__item-actions');
-            const actionEdit = doc.createElement('div');
-            actionEdit.classList.add('aside__item-action');
-            const actionEditIcon = doc.createElement('span');
-            actionEditIcon.classList.add('material-icons-round');
-            actionEditIcon.textContent = 'edit';
-            actionEdit.appendChild(actionEditIcon);
-            actionsRow.appendChild(actionEdit);
-
-            const actionRemove = doc.createElement('div');
-            actionRemove.classList.add('aside__item-action');
-            const actionRemoveIcon = doc.createElement('span');
-            actionRemoveIcon.classList.add('material-icons-round');
-            actionRemoveIcon.textContent = 'clear';
-            actionRemove.appendChild(actionRemoveIcon);
-            actionsRow.appendChild(actionRemove);
-
-            listItem.appendChild(actionsRow);
-
-            projectList.insertBefore(listItem, newProjectRow);
-
-            //Action events
-
-            //Change Name event
-            actionEdit.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                listItem.classList.add('hide-height');
-                showHiddenProject();
-                showEditForm(i, projects[i].title);
-            }, { capture: false });
-
-            //Remove event
-            actionRemove.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-
-                listItem.classList.add('hide-height');
-                showHiddenProject();
-
-                if (i === getCurrentProjectFunction())
-                    cleanToDos();
-
-                removeProjectFunction(i);
-            }, { capture: false });
-
-            //Select event
-            listItem.addEventListener('click', (e) => {
-                e.stopPropagation();
-                unselectTaskButtons();
-
-                const previousProject = doc.querySelector('.project.highlight');
-                if (previousProject) {
-                    previousProject.classList.remove('highlight');
-                }
-
-                listItem.classList.add('highlight');
-
-                let toDos = getProjectToDoFunction(i);
-
-                drawToDos(toDos, i, true);
-            }, { capture: false })
-        }
-    }
-
-    function cleanToDos(forProject) {
-        addToDoBtn.classList.add('hide-height');
-        toDoAddForm.classList.add('hide-height');
-        toDoEditForm.classList.add('hide-height');
-        editingToDo = null;
-
-        if (!forProject)
-            return;
-
-        const toDos = doc.querySelectorAll('.card[data-project-id]');
-
-        for (let i = toDos.length - 1; i >= 0; i--) {
-            toDos[i].remove();
-        }
-    }
-
-    function drawToDos(toDos, projectId, forProject = false, selectType = 0) {
-
-        cleanToDos(forProject);
-        for (let i = 0; i < toDos.length; i++) {
-
-            if (selectType === 1) {
-                if (!isToday(toDos[i].dueDate))
-                    continue;
-            } else if (selectType === 2 && !isToday(toDos[i].dueDate)) {
-                if (!isFuture(toDos[i].dueDate) || differenceInCalendarDays(new Date(), toDos[i].dueDate) > 7)
-                    continue;
-            } else if (selectType === 3) {
-                if (toDos[i].completed === false)
-                    continue;
-            }
-
-            const toDoNode = generateToDo(toDos[i], i, projectId);
-
-            cardsContainer.insertBefore(toDoNode, toDoAddForm);
-        }
-
-        if (forProject) {
-            addToDoBtn.classList.remove('hide-height');
-        }
-    }
-
-    function generateToDo(toDo, index, projectId) {
-
-        const cardItem = doc.createElement('div');
-        cardItem.classList.add('card');
-        cardItem.classList.add(toDo.priority === 0 ? 'low' : toDo.priority === 1 ? 'medium' : 'high');
-
-        cardItem.dataset.toDoId = `${index}`;
-        cardItem.dataset.projectId = `${projectId}`;
-
-        const cardCheckbox = doc.createElement('div');
-        cardCheckbox.classList.add('card__checkbox');
-        const checkboxUncheck = doc.createElement('span');
-        checkboxUncheck.classList.add('material-icons-round');
-        checkboxUncheck.textContent = 'radio_button_unchecked';
-        cardCheckbox.appendChild(checkboxUncheck);
-        const checkboxCheck = doc.createElement('span');
-        checkboxCheck.classList.add('material-icons-round');
-        checkboxCheck.textContent = 'task_alt';
-        cardCheckbox.appendChild(checkboxCheck);
-        cardItem.appendChild(cardCheckbox);
-
-        if (toDo.completed) {
-            cardItem.classList.add('completed');
-            checkboxUncheck.classList.add('hide-display');
-            checkboxCheck.classList.remove('hide-display');
-        } else {
-            checkboxUncheck.classList.remove('hide-display');
-            checkboxCheck.classList.add('hide-display');
-        }
-
-        const cardExpand = doc.createElement('div');
-        cardExpand.classList.add('card__expand');
-        const expand = doc.createElement('span');
-        expand.classList.add('material-icons-round');
-        expand.textContent = 'expand_more';
-        cardExpand.appendChild(expand);
-        const hide = doc.createElement('span');
-        hide.classList.add('material-icons-round');
-        hide.classList.add('hide-display');
-        hide.textContent = 'expand_less';
-        cardExpand.appendChild(hide);
-        cardItem.appendChild(cardExpand);
-
-        const cardTitle = doc.createElement('h3');
-        cardTitle.classList.add('card__title');
-        cardTitle.textContent = toDo.title;
-        cardItem.appendChild(cardTitle);
-
-        const dueDateText = format(toDo.dueDate, 'MM/dd/yyyy');
-        const dueDate = doc.createElement('p');
-        dueDate.classList.add('card__due-date');
-        dueDate.textContent = dueDateText;
-        cardItem.appendChild(dueDate);
-
-        const actionsRow = doc.createElement('div');
-        actionsRow.classList.add('card__actions');
-        const actionEdit = doc.createElement('div');
-        actionEdit.classList.add('card__action');
-        const actionEditIcon = doc.createElement('span');
-        actionEditIcon.classList.add('material-icons-round');
-        actionEditIcon.textContent = 'edit';
-        actionEdit.appendChild(actionEditIcon);
-        actionsRow.appendChild(actionEdit);
-
-        const actionRemove = doc.createElement('div');
-        actionRemove.classList.add('card__action');
-        const actionRemoveIcon = doc.createElement('span');
-        actionRemoveIcon.classList.add('material-icons-round');
-        actionRemoveIcon.textContent = 'clear';
-        actionRemove.appendChild(actionRemoveIcon);
-        actionsRow.appendChild(actionRemove);
-
-        cardItem.appendChild(actionsRow);
-
-        const cardDesc = doc.createElement('p');
-        cardDesc.classList.add('card__desc');
-        cardDesc.classList.add('hide-height');
-        cardDesc.textContent = toDo.description;
-        cardItem.appendChild(cardDesc);
-
-
-        //Action events
-
-        //Mark complete event
-
-        cardCheckbox.addEventListener('click', () => {
-            toggleToDoCompleteFunction(projectId, index);
-
-            const toDo = getProjectToDoFunction(projectId);
-
-            if (toDo[index].completed) {
-                cardItem.classList.add('completed');
-
-                checkboxUncheck.classList.add('hide-display');
-                checkboxCheck.classList.remove('hide-display');
-
-            } else {
-                cardItem.classList.remove('completed');
-
-                checkboxUncheck.classList.remove('hide-display');
-                checkboxCheck.classList.add('hide-display');
-            }
-        });
-
-        //Expand event
-
-        cardExpand.addEventListener('click', () => {
-            expand.classList.toggle('hide-display');
-            hide.classList.toggle('hide-display');
-            cardDesc.classList.toggle('hide-height');
-        });
-
-        //Edit event
-
-        actionEdit.addEventListener('click', () => {
-            showHiddenToDo();
-            editingToDo = {
-                projectIndex: projectId,
-                todoIndex: index
-            };
-
-            cardItem.classList.add('hide-display');
-
-            toDoEditForm.classList.add('hide-height');
-            cardsContainer.insertBefore(toDoEditForm, cardItem);
-            insertDataToEditToDoForm(toDo.title, toDo.priority, toDo.description, toDo.dueDate);
-
-
-            setTimeout(() => {
-                toDoEditForm.classList.remove('hide-height');
-            }, 0);
-        });
-
-        //Remove event
-
-        actionRemove.addEventListener('click', () => {
-            removeToDoFromProjectFunction(projectId, index);
-            cardItem.remove();
-        });
-
-        return cardItem;
-
-    }
-
-    function addTodo() {
-
-        const titleInput = toDoAddForm.querySelector('.new-card__title-input');
-        const dueDateInput = toDoAddForm.querySelector('.new-card__date-input');
-        const priorityInput = toDoAddForm.querySelector('.new-card__priority');
-        const descInput = toDoAddForm.querySelector('.new-card__desc-input');
-
-        const titleText = titleInput.value;
-        if (!titleText) {
-            return;
-        }
-
-        let dueDate = dueDateInput.value;
-        if (!dueDate) {
-            return;
-        }
-        dueDate = new Date(dueDate);
-
-        const priority = Number(priorityInput.value);
-        const descText = descInput.value || '';
-
-        addNewToDoFunction({ title: titleText, dueDate, priority, description: descText });
-
-        const currentProjectId = getCurrentProjectFunction();
-        let toDos = getProjectToDoFunction(currentProjectId);
-        drawToDos(toDos, currentProjectId, true);
-
-        titleInput.value = '';
-        dueDateInput.value = '';
-        priorityInput.value = '0';
-        descInput.value = '';
-    }
-
-    function changeToDoCard(projectIndex, toDoIndex, newTitle, newDescription, newDueDate, newPriority) {
-        const card = doc.querySelector(`.card[data-project-id='${projectIndex}'][data-to-do-id='${toDoIndex}']`);
-        card.classList.remove('low');
-        card.classList.remove('medium');
-        card.classList.remove('high');
-
-        card.classList.add(
-            newPriority === 0 ? 'low' :
-                newPriority === 1 ? 'medium' :
-                    'high'
-        );
-
-        card.querySelector('.card__title').textContent = newTitle;
-        card.querySelector('.card__desc').textContent = newDescription;
-        card.querySelector('.card__due-date').textContent = format(newDueDate, 'MM/dd/yyyy');
-    }
-
-    function insertDataToEditToDoForm(title, priority, description, dueDate) {
-        const titleInput = toDoEditForm.querySelector('.new-card__title-input');
-        const dueDateInput = toDoEditForm.querySelector('.new-card__date-input');
-        const priorityInput = toDoEditForm.querySelector('.new-card__priority');
-        const descInput = toDoEditForm.querySelector('.new-card__desc-input');
-
-        titleInput.value = title;
-        dueDateInput.valueAsDate = dueDate;
-        priorityInput.value = priority;
-        descInput.value = description;
-    }
-
-    menuBtn.addEventListener('click', () => toggleAside());
-
-    addProjectBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        newProjectRow.classList.remove('hide-height');
-    }, { capture: false });
-
-    addToDoBtn.addEventListener('click', () => {
-        //const currentProjectId = getCurrentProjectFunction();
-
-        toDoAddForm.classList.remove('hide-height');
-    });
-
-    //Todo Add form
-
-    toDoAddForm.querySelector('.new-card__add').addEventListener('click', (e) => {
-        e.preventDefault();
-
-        addTodo();
-    });
-
-    toDoAddForm.querySelector('.new-card__cancel').addEventListener('click', (e) => {
-        e.preventDefault();
-
-        toDoAddForm.classList.add('hide-height');
-    });
-
-    //Todo edit form
-
-    toDoEditForm.querySelector('.new-card__edit').addEventListener('click', (e) => {
-        e.preventDefault();
-
-        const titleInput = toDoEditForm.querySelector('.new-card__title-input');
-        const dueDateInput = toDoEditForm.querySelector('.new-card__date-input');
-        const priorityInput = toDoEditForm.querySelector('.new-card__priority');
-        const descInput = toDoEditForm.querySelector('.new-card__desc-input');
-
-        if (!titleInput.value || !dueDateInput.value || !descInput.value)
-            return;
-
-        let dueDateValue = new Date(dueDateInput.value);
-
-        changeToDoInProjectFunction(editingToDo.todoIndex,
-            editingToDo.projectIndex,
-            titleInput.value,
-            descInput.value,
-            dueDateValue,
-            priorityInput.value);
-
-        changeToDoCard(editingToDo.projectIndex,
-            editingToDo.todoIndex,
-            titleInput.value,
-            descInput.value,
-            dueDateValue,
-            priorityInput.value);
-
-        doc.querySelector(`.card[data-project-id='${editingToDo.projectIndex}'][data-to-do-id='${editingToDo.todoIndex}']`).classList.remove('hide-display');
-        editingToDo = null;
-        toDoEditForm.classList.add('hide-height');
-    });
-
-    toDoEditForm.querySelector('.new-card__cancel').addEventListener('click', (e) => {
-        e.preventDefault();
-
-        showHiddenToDo();
-        toDoEditForm.classList.add('hide-height');
-    });
-
-    //Category actions
-
-    allTasksButton.addEventListener('click', () => {
-
-        unselectTaskButtons();
-        unselectProject();
-
-        allTasksButton.classList.add('active');
-
-        cleanToDos(true);
-        const projects = getAllProjectsFunction();
-
-        for (let projI = 0; projI < projects.length; projI++) {
-            const toDos = projects[projI].toDos;
-
-            drawToDos(toDos, projI, false);
-        }
-    });
-
-    todayTasksButton.addEventListener('click', () => {
-
-        unselectTaskButtons();
-        unselectProject();
-
-        todayTasksButton.classList.add('active');
-
-        cleanToDos(true);
-        const projects = getAllProjectsFunction();
-
-        for (let projI = 0; projI < projects.length; projI++) {
-            const toDos = projects[projI].toDos;
-
-            drawToDos(toDos, projI, false, 1);
-        }
-    });
-
-    nextWeekTasksButton.addEventListener('click', () => {
-
-        unselectTaskButtons();
-        unselectProject();
-
-        nextWeekTasksButton.classList.add('active');
-
-        cleanToDos(true);
-        const projects = getAllProjectsFunction();
-
-        for (let projI = 0; projI < projects.length; projI++) {
-            const toDos = projects[projI].toDos;
-
-            drawToDos(toDos, projI, false, 2);
-        }
-    });
-
-    completedTasksButton.addEventListener('click', () => {
-
-        unselectTaskButtons();
-        unselectProject();
-        completedTasksButton.classList.add('active');
-
-        cleanToDos(true);
-        const projects = getAllProjectsFunction();
-
-        for (let projI = 0; projI < projects.length; projI++) {
-            const toDos = projects[projI].toDos;
-
-            drawToDos(toDos, projI, false, 3);
-        }
-    });
-
-    const clickAllTasks = function () {
-        allTasksButton.click();
-    }
-
-    return { drawProjects, clickAllTasks };
-};
+  return { searchInput, ShowSearchError, fillCards, showLoading, hideLoading };
+}
 
 export default domController;

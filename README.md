@@ -1,12 +1,8 @@
-# Todo app
+# Weather app
 
-Todo application which allow for tasks tracking.
+Weather app with a location search bar.
 
-Allows creating multiple projects with set of tasks.
-
-Tasks can be viewed individually by project, all tasks, today tasks, next 7 days tasks and completed tasks.
-
-All data are stored in a local storage.
+Can show weather in the current and next 2 days.
 
 ### Built With
 
@@ -21,7 +17,7 @@ All data are stored in a local storage.
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/Nixionis/to-do-app.git
+   git clone https://github.com/Nixionis/weather-app.git
    ```
 2. Install NPM packages
    ```sh
